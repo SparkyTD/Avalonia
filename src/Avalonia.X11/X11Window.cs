@@ -47,6 +47,7 @@ namespace Avalonia.X11
         private double? _scalingOverride;
         private bool _disabled;
         private TransparencyHelper _transparencyHelper;
+        private X11DragDrop _x11DragDrop;
 
         public object SyncRoot { get; } = new object();
 
@@ -491,6 +492,8 @@ namespace Avalonia.X11
             {
                 Cleanup();
             }
+            else if (ev.type == XEventName.SelectionNotify)
+                _x11DragDrop.HandleSelectionEvent(ev.SelectionEvent);
             else if (ev.type == XEventName.ClientMessage)
             {
                 if (ev.ClientMessageEvent.message_type == _x11.Atoms.WM_PROTOCOLS)
@@ -502,6 +505,15 @@ namespace Avalonia.X11
                     }
 
                 }
+                else if (ev.ClientMessageEvent.message_type == _x11.Atoms.XdndEnter)
+                    _x11DragDrop.HandleDragEnter(ev.ClientMessageEvent);
+                else if (ev.ClientMessageEvent.message_type == _x11.Atoms.XdndPosition)
+                    _x11DragDrop.HandleDragPosition(ev.ClientMessageEvent);
+                else if (ev.ClientMessageEvent.message_type == _x11.Atoms.XdndLeave)
+                    _x11DragDrop.HandleDragLeave(ev.ClientMessageEvent);
+                else if (ev.ClientMessageEvent.message_type == _x11.Atoms.XdndDrop)
+                    _x11DragDrop.HandleDragDrop(ev.ClientMessageEvent);
+                
             }
             else if (ev.type == XEventName.KeyPress || ev.type == XEventName.KeyRelease)
             {
@@ -772,6 +784,9 @@ namespace Avalonia.X11
         public void SetInputRoot(IInputRoot inputRoot)
         {
             _inputRoot = inputRoot;
+            
+            _x11DragDrop = new X11DragDrop(_x11, _handle, _inputRoot, args => Input(args));
+            _x11DragDrop.InitializeWindowDnd();
         }
 
         public void Dispose()
