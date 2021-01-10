@@ -190,6 +190,14 @@ namespace Avalonia.X11
         public readonly IntPtr MANAGER;
         public readonly IntPtr _KDE_NET_WM_BLUR_BEHIND_REGION;
         public readonly IntPtr INCR;
+        public readonly IntPtr XdndAware;
+        public readonly IntPtr XdndEnter;
+        public readonly IntPtr XdndPosition;
+        public readonly IntPtr XdndLeave;
+        public readonly IntPtr XdndDrop;
+        public readonly IntPtr XdndTypeList;
+        public readonly IntPtr XdndSelection;
+        public readonly IntPtr XdndActionPrivate;
 
         private readonly Dictionary<string, IntPtr> _namesToAtoms  = new Dictionary<string, IntPtr>();
         private readonly Dictionary<IntPtr, string> _atomsToNames = new Dictionary<IntPtr, string>();
