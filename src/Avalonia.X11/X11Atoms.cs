@@ -198,6 +198,8 @@ namespace Avalonia.X11
         public readonly IntPtr XdndTypeList;
         public readonly IntPtr XdndSelection;
         public readonly IntPtr XdndActionPrivate;
+        public readonly IntPtr XdndStatus;
+        public readonly IntPtr XdndActionCopy;
 
         private readonly Dictionary<string, IntPtr> _namesToAtoms  = new Dictionary<string, IntPtr>();
         private readonly Dictionary<IntPtr, string> _atomsToNames = new Dictionary<IntPtr, string>();

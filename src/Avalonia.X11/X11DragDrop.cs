@@ -19,6 +19,7 @@ namespace Avalonia.X11
         private readonly IDragDropDevice _dragDevice;
         private readonly IInputRoot _target;
         private readonly Action<RawInputEventArgs> _dispatch;
+        private Point _lastPoint;
 
         public X11DragDrop(X11Info x11, IntPtr windowHandle, IInputRoot target, Action<RawInputEventArgs> dispatch)
         {
@@ -70,15 +71,69 @@ namespace Avalonia.X11
 
         public void HandleDragPosition(XClientMessageEvent ev)
         {
-            Console.Out.WriteLine("*");
+            int x = (int)ev.ptr3 >> 16;
+            int y = (int)ev.ptr3 & 0x0000FFFF;
+            var action = ev.ptr5;
+
+            XTranslateCoordinates(_x11.Display, _x11.RootWindow, _windowHandle,
+                x, y, out var tx, out var ty, out _);
+
+            var args = new RawDragEvent(
+                _dragDevice,
+                RawDragEventType.DragOver,
+                _target,
+                _lastPoint = new Point(tx, ty),
+                _currentDrag,
+                DragDropEffects.Copy,
+                RawInputModifiers.None);
+            _dispatch(args);
+
+            var statusEvent = new XEvent
+            {
+                ClientMessageEvent = new XClientMessageEvent
+                {
+                    display = _x11.Display,
+                    window = ev.ptr1,
+                    message_type = _x11.Atoms.XdndStatus,
+                    format = 32,
+                    ptr1 = _windowHandle,
+                    ptr2 = (IntPtr)1,
+                    ptr3 = (IntPtr)0,
+                    ptr4 = (IntPtr)0,
+                    ptr5 = _x11.Atoms.XdndActionCopy
+                },
+                type = XEventName.ClientMessage
+            };
+            XSendEvent(_x11.Display, ev.ptr1, false, (IntPtr)EventMask.NoEventMask, ref statusEvent);
+            XFlush(_x11.Display);
         }
 
         public void HandleDragLeave(XClientMessageEvent ev)
         {
+            var args = new RawDragEvent(
+                _dragDevice,
+                RawDragEventType.DragLeave,
+                _target,
+                default,
+                null,
+                DragDropEffects.None,
+                RawInputModifiers.None);
+            _dispatch(args);
+            _currentDrag = null;
         }
 
         public void HandleDragDrop(XClientMessageEvent ev)
         {
+            var args = new RawDragEvent(
+                _dragDevice,
+                RawDragEventType.DragLeave,
+                _target,
+                _lastPoint,
+                _currentDrag,
+                DragDropEffects.Copy,
+                RawInputModifiers.None);
+            _dispatch(args);
+            _currentDrag = null;
         }
 
         public void HandleSelectionEvent(XSelectionEvent ev)
@@ -128,6 +183,7 @@ namespace Avalonia.X11
         {
             containsBom = false;
 
+            // Check if 
             var encoding = Encoding.UTF8;
             if (actualType == _x11.Atoms.XA_STRING || actualType == _x11.Atoms.OEMTEXT)
                 encoding = Encoding.ASCII;
