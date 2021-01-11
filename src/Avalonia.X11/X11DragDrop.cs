@@ -64,7 +64,6 @@ namespace Avalonia.X11
                 XGetSelectionOwner(_x11.Display, _x11.Atoms.XdndSelection);
                 XConvertSelection(_x11.Display, _x11.Atoms.XdndSelection, *type,
                     _x11.Atoms.XdndActionPrivate, _windowHandle, (IntPtr)0);
-                _currentDrag.Set(formatKey, null);
                 type++;
             }
         }
@@ -126,7 +125,7 @@ namespace Avalonia.X11
         {
             var args = new RawDragEvent(
                 _dragDevice,
-                RawDragEventType.DragLeave,
+                RawDragEventType.Drop,
                 _target,
                 _lastPoint,
                 _currentDrag,
@@ -147,7 +146,6 @@ namespace Avalonia.X11
                 XGetWindowProperty(_x11.Display, _windowHandle, ev.property, IntPtr.Zero, new IntPtr(0x7fffffff), false, (IntPtr)Atom.AnyPropertyType,
                     out var actualType, out var actualFormat, out var nItems, out var bytes_after, out var prop);
 
-                string text = null;
                 if (nItems != IntPtr.Zero && prop != IntPtr.Zero)
                 {
                     var data = new byte[(int)nItems * (actualFormat / 8)];
@@ -155,7 +153,7 @@ namespace Avalonia.X11
                     var encoding = GetEncoding(ev.target, actualType, data, out bool containsBom);
                     if (containsBom)
                         data = data.Skip(2).ToArray();
-                    text = encoding.GetString(data);
+                    var text = encoding.GetString(data);
                     var targetString = Marshal.PtrToStringAnsi(XGetAtomName(_x11.Display, ev.target));
 
                     _currentDrag ??= new DataObject();
